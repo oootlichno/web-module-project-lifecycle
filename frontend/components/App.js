@@ -1,5 +1,7 @@
 import React, { Component } from "react";
  import axios from 'axios'
+ import Form from "./Form";
+ import TodoList from "./TodoList";
 
 const URL = 'http://localhost:9000/api/todos';
 
@@ -8,6 +10,7 @@ export default class App extends Component {
     todos: [],
     error: '',
     todoNameInput:'',
+    displayCompleted: true,
   }
 
   onTodoNameInputChange = evt => {
@@ -22,7 +25,7 @@ setAxiosResponseError = err => this.setState({...this.state, error: err.response
   postNewTodo = () => {
     axios.post(URL, {name: this.state.todoNameInput})
     .then(res => {
-      this.fetchAllTodos()
+      this.setState({...this.state, todos: this.state.todos.concat(res.data.data)})
       this.resetForm()
     })
     .catch(this.setAxiosResponseError)
@@ -39,6 +42,21 @@ this.setState({...this.state, todos: res.data.data})})
 .catch(this.setAxiosResponseError)
   }
 
+  toggleCompleted = id => () => {
+    axios.patch(`${URL}/${id}`)
+    .then(res => {
+this.setState({...this.state, todos: this.state.todos.map(td =>{
+if (td.id !== id) return td
+return res.data.data
+})})    
+})
+    .catch(this.setAxiosResponseError)
+  }
+
+  toggleDisplayCompleted = () => {
+    this.setState({...this.state, displayCompleted: !this.state.displayCompleted})
+  }
+
   componentDidMount() {
     this.fetchAllTodos()
   }
@@ -48,22 +66,21 @@ this.setState({...this.state, todos: res.data.data})})
     return (
       <div className="App">
         <div id="error">Error: {this.state.error}</div>
-        <h2>Todos:</h2>
-        {this.state.todos.map(tod => (
-          <div key={tod.id}>
-            {tod.name}
-          </div>
-        ))}
-        <form id="todoForm" onSubmit={this.onTodoFormSubmit}>
-<input value={this.state.todoNameInput} onChange={this.onTodoNameInputChange} type="text" placeholder="Type todo"></input>
-<button>Submit</button>
-<button>Hide Completed</button>
-
-        </form>
+        <TodoList
+        todos={this.state.todos}
+        displayCompleted={this.state.displayCompleted}
+        toggleCompleted={this.toggleCompleted}
+        />
+        <Form
+        onTodoFormSubmit={this.onTodoFormSubmit}
+        onTodoNameInputChange={this.onTodoNameInputChange}
+        toggleDisplayCompleted={this.toggleDisplayCompleted}
+        todoNameInput={this.state.todoNameInput}
+        displayCompleted={this.state.displayCompleted}
+         />
       </div>
     );
   }
 }
 
 
-//ReactDOM.render(<App />, document.getElementById('root'));  
